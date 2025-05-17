@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-
+const Counter = require('./Counter');
 const userSchema = new mongoose.Schema({
     full_name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
@@ -20,6 +20,26 @@ const userSchema = new mongoose.Schema({
     latitude: { type: String },
     longitude: { type: String },
     status: { type: Boolean, default: true },
+       user_id: { type: Number, unique: true }, // 👈 added
+
+  seq: { type: Number, default: 0 }
 }, { timestamps: true });
+userSchema.pre('save', async function (next) {
+    if (this.isNew) {
+        try {
+            const counter = await Counter.findByIdAndUpdate(
+                { _id: 'user_id' },
+                { $inc: { seq: 1 } },
+                { new: true, upsert: true }
+            );
+            this.user_id = counter.seq;
+            next();
+        } catch (err) {
+            next(err);
+        }
+    } else {
+        next();
+    }
+});
 
 module.exports = mongoose.model('User', userSchema);
