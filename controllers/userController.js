@@ -2,7 +2,8 @@ const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 
 const mongoose = require('mongoose');
-
+const Blacklist = require('../models/blacklistModel');
+const jwt = require('jsonwebtoken');
 exports.registerUser = async (req, res) => {
     try {
         const {
@@ -61,5 +62,37 @@ exports.registerUser = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error', error: err.message });
     }
 };
+
+exports.getProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.user_id).select('-password');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        res.status(200).json({
+            message: 'Profile fetched successfully',
+            user
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+exports.logoutUser = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(400).json({ message: 'Token not found' });
+
+    const decoded = jwt.decode(token);
+    const expiry = new Date(decoded.exp * 1000); // JWT exp is in seconds
+
+    await Blacklist.create({ token, expiredAt: expiry });
+
+    return res.status(200).json({ message: 'User logged out successfully' });
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 
 
