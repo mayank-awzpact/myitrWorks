@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const Blacklist = require('../models/blacklistModel');
-module.exports = (req, res, next) => {
+
+module.exports = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -10,10 +11,18 @@ module.exports = (req, res, next) => {
     const token = authHeader.split(' ')[1];
 
     try {
+        // 🔍 Check if token is blacklisted
+        const isBlacklisted = await Blacklist.findOne({ token });
+        if (isBlacklisted) {
+            return res.status(401).json({ message: 'Token has been logged out. Please login again.' });
+        }
+
+        // ✅ Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
+
         next();
     } catch (err) {
-        return res.status(401).json({ message: 'Invalid token' });
+        return res.status(401).json({ message: 'Invalid or expired token' });
     }
 };
