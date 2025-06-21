@@ -18,7 +18,7 @@ const apiLimiter = rateLimit({
   },
 });
 
-// ✅ Middleware efeefe
+// ✅ Middleware efeefefef
 app.use(cors()); // ✅ Enable CORS for all origins
 app.use(express.json());
 
