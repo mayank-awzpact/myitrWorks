@@ -1,6 +1,6 @@
 const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
-const LoginActivity = require("../models/LoginActivity");
+
 const mongoose = require("mongoose");
 const Blacklist = require("../models/blacklistModel");
 const jwt = require("jsonwebtoken");
@@ -90,7 +90,6 @@ exports.getProfile = async (req, res) => {
     res.status(200).json({
       message: "Profile fetched successfully",
       user,
-      
     });
   } catch (err) {
     console.error(err);
@@ -99,32 +98,23 @@ exports.getProfile = async (req, res) => {
 };
 
 exports.logoutUser = async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(400).json({ message: "Token not found" });
-
-    const decoded = jwt.decode(token);
-    if (!decoded || !decoded.email) {
-      return res.status(400).json({ message: "Invalid token" });
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) return res.status(400).json({ message: "Token not found" });
+  
+      const decoded = jwt.decode(token);
+      if (!decoded || !decoded.email) {
+        return res.status(400).json({ message: "Invalid token" });
+      }
+  
+      const expiry = new Date(decoded.exp * 1000); // JWT exp is in seconds
+      const email = decoded.email; // Extract email from decoded token
+  
+      await Blacklist.create({ email, token, expiredAt: expiry });
+  
+      return res.status(200).json({ message: "User logged out successfully" });
+    } catch (err) {
+      return res.status(500).json({ message: "Server error", error: err.message });
     }
-
-    const expiry = new Date(decoded.exp * 1000);
-    const email = decoded.email;
-
-    // Step 1: Token blacklist karo
-    await Blacklist.create({ email, token, expiredAt: expiry });
-
-    // Step 2: LoginActivity mein current user ke active session ko inactive karo
-    await LoginActivity.updateMany(
-      { email, is_active: true },
-      { $set: { is_active: false } }
-    );
-
-    return res.status(200).json({ message: "User logged out successfully" });
-  } catch (err) {
-    return res
-      .status(500)
-      .json({ message: "Server error", error: err.message });
-  }
-};
+  };
   
