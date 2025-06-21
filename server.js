@@ -17,8 +17,8 @@ const apiLimiter = rateLimit({
       "Too many requests from this IP, please try again after 15 minutes.",
   },
 });
-
-// ✅ Middleware
+  
+// ✅ Middleware efeefe
 app.use(cors()); // ✅ Enable CORS for all origins
 app.use(express.json());
 
